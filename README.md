@@ -8,7 +8,7 @@ import os
 import random
 import time
 import pywhatkit 
-import requests
+import requests 
 
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
