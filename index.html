@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS — AI Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05080f;--panel:#070d1a;--border:#0d2035;
+  --accent:#00c8ff;--green:#00ff99;--purple:#a78bfa;
+  --text:#a8d4f0;--muted:#4a90b8;--warn:#ff6b35;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;overflow-x:hidden}
+body{display:flex;flex-direction:column;min-height:100vh;padding:16px;gap:12px}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;gap:12px;padding:0 4px}
+.brand{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:var(--accent);letter-spacing:4px}
+.ws-badge{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:2px;padding:4px 10px;border:1px solid var(--border);border-radius:4px;margin-left:auto}
+.ws-dot{width:7px;height:7px;border-radius:50%;background:#555;transition:background .3s}
+.ws-dot.online{background:var(--green);animation:blink 1.4s infinite}
+.ws-dot.listening{background:var(--accent);animation:blink .6s infinite}
+.ws-dot.thinking{background:var(--purple);animation:blink .4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.ws-label{color:var(--muted)}
+
+/* GRID LAYOUT */
+.main-grid{display:grid;grid-template-columns:1fr 260px;gap:12px;flex:1}
+
+/* LEFT COL */
+.left-col{display:flex;flex-direction:column;gap:12px}
+
+/* ORB */
+.orb-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.orb-wrap{position:relative;width:150px;height:150px}
+.orb-wrap svg{width:150px;height:150px}
+.orb-core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;background:var(--bg);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;transition:border-color .3s}
+.orb-j{font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:var(--accent);transition:color .3s}
+.orb-state{font-size:10px;letter-spacing:3px;color:var(--muted);transition:color .3s}
+.orb-core.listening{border-color:var(--green)}
+.orb-core.listening .orb-j{color:var(--green)}
+.orb-core.thinking{border-color:var(--purple)}
+.orb-core.thinking .orb-j{color:var(--purple)}
+
+/* WAVEFORM */
+.waveform{display:flex;align-items:center;gap:3px;height:48px;padding:0 8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;width:100%}
+.bar{width:4px;border-radius:2px;background:var(--accent);transition:background .3s}
+.bar.idle{animation:wave 1.2s ease-in-out infinite}
+.bar.active{animation:wave .5s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.bar:nth-child(1){animation-delay:0s;height:10px}.bar:nth-child(2){animation-delay:.06s;height:18px}.bar:nth-child(3){animation-delay:.12s;height:28px}.bar:nth-child(4){animation-delay:.18s;height:38px}.bar:nth-child(5){animation-delay:.24s;height:44px}.bar:nth-child(6){animation-delay:.3s;height:40px}.bar:nth-child(7){animation-delay:.36s;height:32px}.bar:nth-child(8){animation-delay:.42s;height:24px}.bar:nth-child(9){animation-delay:.48s;height:30px}.bar:nth-child(10){animation-delay:.54s;height:40px}.bar:nth-child(11){animation-delay:.6s;height:44px}.bar:nth-child(12){animation-delay:.66s;height:36px}.bar:nth-child(13){animation-delay:.72s;height:24px}.bar:nth-child(14){animation-delay:.78s;height:14px}.bar:nth-child(15){animation-delay:.84s;height:8px}
+
+/* SPEECH BOX */
+.speech-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;flex:1}
+.panel-title{font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.panel-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.4s infinite}
+.speech-text{font-size:13px;color:#c8e8ff;line-height:1.8;min-height:80px}
+.cursor{display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;animation:blink .7s infinite;vertical-align:middle}
+
+/* RIGHT COL */
+.right-col{display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
+
+/* METRICS */
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}
+.stat-row:last-child{border:none}
+.stat-label{font-size:11px;color:var(--muted)}
+.stat-bar-wrap{width:72px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.stat-bar{height:100%;border-radius:2px;transition:width .8s}
+.stat-val{font-size:11px;color:var(--accent);min-width:36px;text-align:right}
+
+/* RADAR */
+.radar-center{display:flex;justify-content:center;padding:4px 0}
+
+/* LOG */
+.cmd-log{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow:hidden}
+.log-entry{font-size:11px;padding:5px 8px;border-radius:4px;border-left:2px solid;line-height:1.4;word-break:break-word}
+.log-entry.user{border-color:var(--muted);color:#7ab8d8;background:#0a1525}
+.log-entry.jarvis{border-color:var(--accent);color:var(--text);background:#081828}
+.log-entry.sys{border-color:var(--green);color:#00cc77;background:#071510}
+.log-entry.err{border-color:var(--warn);color:var(--warn);background:#140a05}
+
+/* BOTTOM METRICS */
+.bottom-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.metric-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.metric-num{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--accent);margin:4px 0;transition:color .3s}
+.metric-label{font-size:9px;letter-spacing:2px;color:var(--muted)}
+.metric-sub{font-size:10px;color:var(--green);margin-top:2px}
+
+/* SENTIMENT BADGE */
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:3px;letter-spacing:1px;margin-top:6px}
+.badge.Positive{background:#071510;color:var(--green);border:1px solid var(--green)}
+.badge.Negative{background:#140a05;color:var(--warn);border:1px solid var(--warn)}
+.badge.Neutral{background:#080d18;color:var(--muted);border:1px solid var(--muted)}
+
+/* INSTRUCTION */
+.instruction{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:11px;color:var(--muted);line-height:1.8;margin-top:4px}
+.instruction code{color:var(--accent);background:var(--bg);padding:1px 5px;border-radius:3px}
+
+@media(max-width:600px){
+  .main-grid{grid-template-columns:1fr}
+  .right-col{display:none}
+  .bottom-row{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">JARVIS</div>
+  <div style="font-size:10px;letter-spacing:2px;color:var(--muted)">v2.1 — LIVE UI</div>
+  <div class="ws-badge">
+    <div class="ws-dot" id="ws-dot"></div>
+    <span class="ws-label" id="ws-label">CONNECTING</span>
+  </div>
+</div>
+
+<div class="main-grid">
+
+  <!-- LEFT -->
+  <div class="left-col">
+
+    <div class="orb-panel">
+      <div class="orb-wrap">
+        <svg viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="70" fill="none" stroke="#0d2035" stroke-width="1"/>
+          <circle cx="75" cy="75" r="70" fill="none" stroke="#00c8ff" stroke-width="1.5" stroke-dasharray="8 6" opacity=".5">
+            <animateTransform attributeName="transform" type="rotate" from="0 75 75" to="360 75 75" dur="14s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="75" cy="75" r="52" fill="none" stroke="#0d2035" stroke-width=".5"/>
+          <circle cx="75" cy="75" r="52" fill="none" stroke="#00c8ff" stroke-width="1" stroke-dasharray="3 9" opacity=".3">
+            <animateTransform attributeName="transform" type="rotate" from="360 75 75" to="0 75 75" dur="9s" repeatCount="indefinite"/>
+          </circle>
+          <g id="sweep-group">
+            <path d="M75 75 L75 5 A70 70 0 0 1 145 75 Z" fill="#00c8ff" opacity=".06"/>
+            <line x1="75" y1="75" x2="75" y2="5" stroke="#00c8ff" stroke-width="1.5" opacity=".9" stroke-linecap="round"/>
+            <circle cx="75" cy="5" r="4" fill="#00c8ff" opacity=".9"/>
+            <animateTransform attributeName="transform" type="rotate" from="0 75 75" to="360 75 75" dur="4s" repeatCount="indefinite"/>
+          </g>
+          <circle cx="127" cy="75" r="3.5" fill="#00ff99" opacity=".8">
+            <animateTransform attributeName="transform" type="rotate" from="0 75 75" to="-360 75 75" dur="9s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="75" cy="75" r="3" fill="#00c8ff"/>
+        </svg>
+        <div class="orb-core" id="orb-core">
+          <div class="orb-j" id="orb-j">J</div>
+        </div>
+      </div>
+      <div class="orb-state" id="orb-state">ARC REACTOR ONLINE</div>
+      <div class="waveform" id="waveform">
+        <div class="bar idle"></div><div class="bar idle"></div><div class="bar idle"></div>
+        <div class="bar idle"></div><div class="bar idle"></div><div class="bar idle"></div>
+        <div class="bar idle"></div><div class="bar idle"></div><div class="bar idle"></div>
+        <div class="bar idle"></div><div class="bar idle"></div><div class="bar idle"></div>
+        <div class="bar idle"></div><div class="bar idle"></div><div class="bar idle"></div>
+      </div>
+    </div>
+
+    <div class="speech-panel">
+      <div class="panel-title"><div class="panel-dot"></div>JARVIS SPEAKING</div>
+      <div class="speech-text" id="speech-text">Waiting for Jarvis to connect...<span class="cursor"></span></div>
+      <div id="sentiment-badge"></div>
+    </div>
+
+    <div class="instruction">
+      <strong style="color:var(--accent)">How to connect:</strong><br>
+      1. Start API: <code>uvicorn api:app --reload --port 8000</code><br>
+      2. Run Jarvis: <code>python model.py</code><br>
+      3. This page auto-connects — everything updates live.
+    </div>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-col">
+
+    <div class="panel">
+      <div class="panel-title">SYSTEM METRICS</div>
+      <div class="stat-row">
+        <span class="stat-label">CPU</span>
+        <div class="stat-bar-wrap"><div class="stat-bar" id="cpu-bar" style="width:42%;background:var(--accent)"></div></div>
+        <span class="stat-val" id="cpu-val">42%</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">RAM</span>
+        <div class="stat-bar-wrap"><div class="stat-bar" id="ram-bar" style="width:58%;background:var(--green)"></div></div>
+        <span class="stat-val" style="color:var(--green)" id="ram-val">58%</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">API</span>
+        <div class="stat-bar-wrap"><div class="stat-bar" id="api-bar" style="width:80%;background:var(--accent)"></div></div>
+        <span class="stat-val" id="api-val">80ms</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">MIC</span>
+        <div class="stat-bar-wrap"><div class="stat-bar" id="mic-bar" style="width:0%;background:var(--purple)"></div></div>
+        <span class="stat-val" style="color:var(--purple)" id="mic-val">IDLE</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">RADAR</div>
+      <div class="radar-center">
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="50" fill="none" stroke="#0d2035" stroke-width=".5"/>
+          <circle cx="55" cy="55" r="38" fill="none" stroke="#0d2035" stroke-width=".5"/>
+          <circle cx="55" cy="55" r="25" fill="none" stroke="#0d2035" stroke-width=".5"/>
+          <circle cx="55" cy="55" r="12" fill="none" stroke="#0d2035" stroke-width=".5"/>
+          <line x1="55" y1="5" x2="55" y2="105" stroke="#0d2035" stroke-width=".5"/>
+          <line x1="5" y1="55" x2="105" y2="55" stroke="#0d2035" stroke-width=".5"/>
+          <path d="M55 55 L55 5 A50 50 0 0 1 105 55 Z" fill="#00c8ff" opacity=".07">
+            <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="360 55 55" dur="3s" repeatCount="indefinite"/>
+          </path>
+          <line x1="55" y1="55" x2="55" y2="5" stroke="#00c8ff" stroke-width="1.5" opacity=".9">
+            <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="360 55 55" dur="3s" repeatCount="indefinite"/>
+          </line>
+          <circle cx="36" cy="28" r="3" fill="#00ff99" opacity=".8"/>
+          <circle cx="74" cy="46" r="2" fill="#00c8ff" opacity=".9"/>
+          <circle cx="43" cy="72" r="2.5" fill="#00ff99" opacity=".6"/>
+          <circle cx="55" cy="55" r="2.5" fill="#00c8ff"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">COMMAND LOG</div>
+      <div class="cmd-log" id="cmd-log">
+        <div class="log-entry sys">SYS: Jarvis UI loaded — waiting for model.py</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM METRICS -->
+<div class="bottom-row">
+  <div class="metric-card">
+    <div class="metric-label">UPTIME</div>
+    <div class="metric-num" id="uptime">00:00</div>
+    <div class="metric-sub">SESSION</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">COMMANDS</div>
+    <div class="metric-num" id="cmd-count">0</div>
+    <div class="metric-sub">THIS SESSION</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">AI MODEL</div>
+    <div class="metric-num" style="font-size:12px;margin-top:6px">CLAUDE</div>
+    <div class="metric-sub">SONNET 4</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">STATUS</div>
+    <div class="metric-num" id="status-num" style="font-size:12px;margin-top:6px">OFFLINE</div>
+    <div class="metric-sub" id="status-sub">NO CONNECTION</div>
+  </div>
+</div>
+
+<script>
+
+let cmdCount = 0;
+let seconds  = 0;
+let wsConnected = false;
+let typingInterval = null;
+
+
+setInterval(() => {
+  seconds++;
+  const m = String(Math.floor(seconds/60)).padStart(2,'0');
+  const s = String(seconds%60).padStart(2,'0');
+  document.getElementById('uptime').textContent = m+':'+s;
+}, 1000);
+
+
+setInterval(() => {
+  const c = Math.round(28 + Math.random()*40);
+  document.getElementById('cpu-bar').style.width = c+'%';
+  document.getElementById('cpu-val').textContent  = c+'%';
+  const r = Math.round(45 + Math.random()*30);
+  document.getElementById('ram-bar').style.width = r+'%';
+  document.getElementById('ram-val').textContent  = r+'%';
+  const a = Math.round(60 + Math.random()*80);
+  document.getElementById('api-bar').style.width = Math.min(a/2,100)+'%';
+  document.getElementById('api-val').textContent  = a+'ms';
+}, 2200);
+
+
+function addLog(type, text) {
+  const log = document.getElementById('cmd-log');
+  const div = document.createElement('div');
+  div.className = 'log-entry '+type;
+  const time = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  div.textContent = '['+time+'] '+text;
+  log.appendChild(div);
+  while(log.children.length > 8) log.removeChild(log.children[0]);
+}
+
+function typeText(text) {
+  if(typingInterval) clearInterval(typingInterval);
+  const el = document.getElementById('speech-text');
+  const cursor = '<span class="cursor"></span>';
+  let i = 0;
+  el.innerHTML = cursor;
+  typingInterval = setInterval(() => {
+    i++;
+    el.innerHTML = text.slice(0,i) + cursor;
+    if(i >= text.length) clearInterval(typingInterval);
+  }, 30);
+}
+
+
+function setState(state) {
+  const core  = document.getElementById('orb-core');
+  const orbJ  = document.getElementById('orb-j');
+  const label = document.getElementById('orb-state');
+  const dot   = document.getElementById('ws-dot');
+  const wsDot = document.getElementById('ws-label');
+  const bars  = document.querySelectorAll('.bar');
+  const micBar= document.getElementById('mic-bar');
+  const micVal= document.getElementById('mic-val');
+  const sNum  = document.getElementById('status-num');
+  const sSub  = document.getElementById('status-sub');
+
+  core.className = 'orb-core '+state;
+
+  if(state === 'listening'){
+    label.textContent = 'LISTENING...';
+    label.style.color = 'var(--green)';
+    dot.className = 'ws-dot listening';
+    wsDot.textContent = 'LISTENING';
+    bars.forEach(b => { b.style.background='var(--green)'; b.className='bar active'; });
+    micBar.style.width = '90%';
+    micVal.textContent = 'LIVE';
+    sNum.textContent = 'MIC ON';
+    sNum.style.color = 'var(--green)';
+    sSub.textContent = 'LISTENING';
+  } else if(state === 'thinking'){
+    label.textContent = 'PROCESSING...';
+    label.style.color = 'var(--purple)';
+    dot.className = 'ws-dot thinking';
+    wsDot.textContent = 'THINKING';
+    bars.forEach(b => { b.style.background='var(--purple)'; b.className='bar idle'; });
+    micBar.style.width = '0%';
+    micVal.textContent = 'IDLE';
+    sNum.textContent = 'AI...';
+    sNum.style.color = 'var(--purple)';
+    sSub.textContent = 'CLAUDE API';
+  } else if(state === 'speaking'){
+    label.textContent = 'SPEAKING';
+    label.style.color = 'var(--accent)';
+    dot.className = 'ws-dot online';
+    wsDot.textContent = 'ONLINE';
+    bars.forEach(b => { b.style.background='var(--accent)'; b.className='bar active'; });
+    micBar.style.width = '0%';
+    micVal.textContent = 'IDLE';
+    sNum.textContent = 'ACTIVE';
+    sNum.style.color = 'var(--accent)';
+    sSub.textContent = 'SPEAKING';
+  } else {
+    label.textContent = 'ARC REACTOR ONLINE';
+    label.style.color = 'var(--muted)';
+    dot.className = wsConnected ? 'ws-dot online' : 'ws-dot';
+    wsDot.textContent = wsConnected ? 'ONLINE' : 'OFFLINE';
+    bars.forEach(b => { b.style.background='var(--accent)'; b.className='bar idle'; });
+    micBar.style.width = '0%';
+    micVal.textContent = 'IDLE';
+    sNum.textContent = wsConnected ? 'READY' : 'OFFLINE';
+    sNum.style.color = wsConnected ? 'var(--accent)' : 'var(--muted)';
+    sSub.textContent = wsConnected ? 'STANDBY' : 'NO CONNECTION';
+  }
+}
+
+// ─── WEBSOCKET ────────────────────────────
+function connectWS() {
+  const ws = new WebSocket('ws://127.0.0.1:8000/ws');
+
+  ws.onopen = () => {
+    wsConnected = true;
+    document.getElementById('ws-dot').className = 'ws-dot online';
+    document.getElementById('ws-label').textContent = 'ONLINE';
+    document.getElementById('status-num').textContent = 'READY';
+    document.getElementById('status-num').style.color = 'var(--accent)';
+    document.getElementById('status-sub').textContent = 'CONNECTED';
+    addLog('sys', 'WebSocket connected to Jarvis API');
+    typeText('Connection established. Jarvis is online and ready for your commands, sir.');
+  };
+
+  ws.onclose = () => {
+    wsConnected = false;
+    setState('idle');
+    document.getElementById('ws-dot').className = 'ws-dot';
+    document.getElementById('ws-label').textContent = 'OFFLINE';
+    addLog('err', 'Connection lost — retrying in 3s...');
+    typeText('Connection lost. Make sure the API server is running.');
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => {
+    addLog('err', 'Cannot reach API — is uvicorn running?');
+  };
+
+  ws.onmessage = (evt) => {
+    let msg;
+    try { msg = JSON.parse(evt.data); } catch { return; }
+
+    if(msg.type === 'connected'){
+      addLog('sys', 'Jarvis model.py is live');
+
+    } else if(msg.type === 'jarvis_speaking'){
+      setState('speaking');
+      typeText(msg.text);
+      addLog('jarvis', 'JAR: '+msg.text);
+
+    } else if(msg.type === 'listening'){
+      setState('listening');
+      typeText('Listening...');
+      document.getElementById('mic-bar').style.width = '90%';
+      document.getElementById('mic-val').textContent = 'LIVE';
+
+    } else if(msg.type === 'thinking'){
+      setState('thinking');
+      typeText('Processing your request...');
+
+    } else if(msg.type === 'user_command'){
+      setState('thinking');
+      cmdCount++;
+      document.getElementById('cmd-count').textContent = cmdCount;
+      addLog('user', 'YOU: '+msg.text);
+
+      const badge = document.getElementById('sentiment-badge');
+      if(msg.sentiment){
+        badge.innerHTML = '<span class="badge '+msg.sentiment+'">'+msg.sentiment.toUpperCase()+'</span>';
+      }
+
+    } else if(msg.type === 'jarvis_reply'){
+      setState('speaking');
+      typeText(msg.text);
+      addLog('jarvis', 'JAR: '+msg.text);
+    }
+  };
+}
+
+connectWS();
+</script>
+</body>
+</html>
